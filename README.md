@@ -56,7 +56,7 @@ In this gamemode, players draw a hand of cards and then pass them around to each
 
 The default hand size for players is `Starting Picks + Extra Cards Drawn + 1`.
 
-If a player would ever need to 
+If a player would ever need to pick a card when they've run out, the game will generate a new set of hands for the players.
 
 If using classes manager reborn, Force classes is advised to be off.
 
@@ -67,9 +67,9 @@ It is recommended to disable shuffle, distill knowledge, and other similar cards
 
 - Starting Picks: The starting number of picks for the initial draft.
 - Extra Cards Drawn: How many extra cards are drawn per draft.
-- Can Pick Cards Each Round: Whether you get to pick cards each round. Picking on continues is disabled if true.
+- Can Pick Cards Each Round: Whether you get to pick cards each round. Picking on continues is disabled if true. Winners would not get to pick.
 - Picks Per Round: How many picks you get each round.
-- Can Pick Cards On Continue: Whether you can pick cards when you continue.
+- Can Pick Cards On Continue: Whether you can pick cards when you continue. Note that winners get to pick as well.
 - Picks Per Continue: How many picks you get on a continue.
 - Recalculate Continue Hand Size: Whether the hand size for a continue is recalculated based on the number of picks you get.
 </details>
