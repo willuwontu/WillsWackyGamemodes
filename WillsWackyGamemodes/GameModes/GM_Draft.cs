@@ -46,8 +46,11 @@ namespace WWGM.GameModes
 
         internal PickOrderStrategy currentStrategy;
 
-        internal static CardCategory handManipulation => CustomCardCategories.instance.CardCategory("handManipulation");
-        internal static CardCategory handSizeManipulation => CustomCardCategories.instance.CardCategory("handSizeManipulation");
+        internal int currentPickPhase;
+        internal int maxPickPhases;
+
+        public static CardCategory handManipulation => CustomCardCategories.instance.CardCategory("handManipulation");
+        public static CardCategory handSizeManipulation => CustomCardCategories.instance.CardCategory("handSizeManipulation");
 
         List<Player> prevPickOrder = new List<Player>();
 
@@ -165,12 +168,12 @@ namespace WWGM.GameModes
                 max = handSizes.Max();
             }
 
-            UnityEngine.Debug.Log($"Smallest Hand Size is {min}");
+            //UnityEngine.Debug.Log($"Smallest Hand Size is {min}");
 
             // If we're under the minimum hand size, we flag for creating a new set of hands for players
             if (min < minimumCardsInHand) 
             {
-                UnityEngine.Debug.Log($"Clearing hands");
+                //UnityEngine.Debug.Log($"Clearing hands");
                 GM_Draft.draftingcards.Clear();
                 GM_Draft.draftingcards = new Dictionary<Player, List<CardInfo>>();
 
@@ -181,7 +184,7 @@ namespace WWGM.GameModes
 
                 
                 GM_Draft.firstpick = true;
-                UnityEngine.Debug.Log($"First pick is {GM_Draft.firstpick}");
+                //UnityEngine.Debug.Log($"First pick is {GM_Draft.firstpick}");
                 min = GM_Draft.startingPicks + GM_Draft.extraCardsDrawn + 1;
                 if (continuing && GM_Draft.continueUsesOwnCount)
                 {
@@ -198,7 +201,7 @@ namespace WWGM.GameModes
                     {
                         while (kvp.Value.Count > min) 
                         {
-                            UnityEngine.Debug.Log($"Clipping a card from Player {kvp.Key.playerID}'s hand.");
+                            //UnityEngine.Debug.Log($"Clipping a card from Player {kvp.Key.playerID}'s hand.");
                             var ind = UnityEngine.Random.Range(0, kvp.Value.Count);
                             kvp.Value.RemoveAt(ind);
                         }
@@ -206,7 +209,7 @@ namespace WWGM.GameModes
                 }
             }
 
-            UnityEngine.Debug.Log($"Min set to {min}");
+            //UnityEngine.Debug.Log($"Min set to {min}");
 
             // If it's not a first pick, and there was a previous pick order, we pass the hands around.
             if (!GM_Draft.firstpick && this.prevPickOrder.Count > 0)
@@ -220,10 +223,10 @@ namespace WWGM.GameModes
 
                 for (int i = 0; i < prevPickOrder.Count; i++)
                 {
-                    UnityEngine.Debug.Log($"Transferring cards from player {prevPickOrder[i].playerID} to player {pickOrder[i].playerID}:");
+                    //UnityEngine.Debug.Log($"Transferring cards from player {prevPickOrder[i].playerID} to player {pickOrder[i].playerID}:");
                     foreach (var c in draftingcards[prevPickOrder[i]])
                     {
-                        UnityEngine.Debug.Log($"{c.cardName}");
+                        //UnityEngine.Debug.Log($"{c.cardName}");
                     }
 
                     newHands[pickOrder[i]] = draftingcards[prevPickOrder[i]];
@@ -236,6 +239,14 @@ namespace WWGM.GameModes
 
                 draftingcards = newHands.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             }
+            UIHandler.instance.ShowJoinGameText($"Pick Phase:\n{this.currentPickPhase}/{this.maxPickPhases}\n\n", PlayerSkinBank.GetPlayerSkinColors(1).winText);
+            yield return new WaitForSecondsRealtime(1f);
+            UIHandler.instance.HideJoinGameText();
+            yield return null;
+            UIHandler.instance.ShowJoinGameText($"Starting Player:\n{(PhotonNetwork.OfflineMode ? $"Player {pickOrder.Where(p=>!winners.Contains(p.teamID)).ToArray()[0].playerID}" : pickOrder[0].data.view.Owner.NickName)}", PlayerSkinBank.GetPlayerSkinColors(pickOrder.Where(p => !winners.Contains(p.teamID)).ToArray()[0].teamID).winText);
+            yield return new WaitForSecondsRealtime(1f);
+            UIHandler.instance.HideJoinGameText();
+            yield return new WaitForSecondsRealtime(0.2f);
 
             for (int i = 0; i < pickOrder.Count(); i++)
             {
@@ -253,8 +264,9 @@ namespace WWGM.GameModes
                     yield return this.WaitForSyncUp();
 
                     yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
-
+                    DrawNCards.DrawNCards.RPCA_SetPickerDraws(player.playerID, min);
                     CardChoiceVisuals.instance.Show(player.playerID, true);
+                    DrawNCards.DrawNCards.RPCA_SetPickerDraws(player.playerID, min);
                     yield return CardChoice.instance.DoPick(1, player.playerID, PickerType.Player);
 
                     yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickEnd);
@@ -263,7 +275,7 @@ namespace WWGM.GameModes
                 }
                 else if (firstpick)
                 {
-                    UnityEngine.Debug.Log($"Firstpick, Generating cards for a winner.");
+                    //UnityEngine.Debug.Log($"Firstpick, Generating cards for a winner.");
                     if (player.data.view.IsMine || PhotonNetwork.OfflineMode)
                     {
                         List<CardInfo> newHand = new List<CardInfo>();
@@ -287,7 +299,7 @@ namespace WWGM.GameModes
 
                         foreach (var card in newHand)
                         {
-                            UnityEngine.Debug.Log(card.name);
+                            //UnityEngine.Debug.Log(card.name);
                         }
 
                         NetworkingManager.RPC(typeof(GM_Draft), nameof(GM_Draft.URPCA_RegisterSpawnedCards), new object[] { player.playerID, newHand.Select(c => c.name).ToArray() });
@@ -339,6 +351,8 @@ namespace WWGM.GameModes
 
             for (int i = 0; i < GM_Draft.startingPicks; i++)
             {
+                this.currentPickPhase = i + 1;
+                this.maxPickPhases = GM_Draft.startingPicks;
                 yield return HandlePicks(null);
                 yield return this.WaitForSyncUp();
             }
@@ -383,6 +397,8 @@ namespace WWGM.GameModes
             {
                 for (int i = 0; i < GM_Draft.picksPerRound; i++)
                 {
+                    this.currentPickPhase = i + 1;
+                    this.maxPickPhases = GM_Draft.picksPerRound;
                     yield return HandlePicks(winningTeamIDs);
                     yield return this.WaitForSyncUp();
                 }

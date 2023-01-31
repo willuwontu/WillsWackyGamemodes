@@ -9,6 +9,7 @@ using UnboundLib.GameModes;
 using UnityEngine;
 using UnboundLib;
 using WWGM.Algorithms;
+using Photon.Pun;
 
 namespace WWGM.GameModes
 {
@@ -71,6 +72,14 @@ namespace WWGM.GameModes
             for (int i = 0; i < GM_StudDraw.numOfPicks; i++) 
             {
                 pickOrder = this.currentStrategy.GetPickOrder(new int[] { });
+
+                yield return new WaitForSecondsRealtime(0.5f);
+                UIHandler.instance.ShowJoinGameText($"Pick Phase\n{i+1}/{GM_StudDraw.numOfPicks}", PlayerSkinBank.GetPlayerSkinColors(1).winText);
+                yield return new WaitForSecondsRealtime(1f);
+                UIHandler.instance.ShowJoinGameText($"Starting Player\n{(PhotonNetwork.OfflineMode ? $"Player {pickOrder[0].playerID}" : pickOrder[0].data.view.Owner.NickName)}", PlayerSkinBank.GetPlayerSkinColors(pickOrder[0].teamID).winText);
+                yield return new WaitForSecondsRealtime(1f);
+                UIHandler.instance.HideJoinGameText();
+                yield return new WaitForSecondsRealtime(0.2f);
 
                 for (int j = 0; j < pickOrder.Count; j++)
                 {
