@@ -252,7 +252,7 @@ namespace WWGM.GameModes
             {
                 Player player = pickOrder[i];
 
-                if (player == null)
+                if (player == null || (!(PlayerManager.instance.players.Contains(player))))
                 {
                     continue;
                 }
@@ -265,7 +265,7 @@ namespace WWGM.GameModes
 
                     yield return GameModeManager.TriggerHook(GameModeHooks.HookPlayerPickStart);
                     DrawNCards.DrawNCards.RPCA_SetPickerDraws(player.playerID, min);
-                    CardChoiceVisuals.instance.Show(player.playerID, true);
+                    CardChoiceVisuals.instance.Show(Enumerable.Range(0, PlayerManager.instance.players.Count).Where(i => PlayerManager.instance.players[i].playerID == player.playerID).First(), true);
                     DrawNCards.DrawNCards.RPCA_SetPickerDraws(player.playerID, min);
                     yield return CardChoice.instance.DoPick(1, player.playerID, PickerType.Player);
 

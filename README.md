@@ -78,3 +78,34 @@ It is recommended to disable shuffle, distill knowledge, and other similar cards
 - Recalculate Continue Hand Size: Whether the hand size for a continue is recalculated based on the number of picks you get.
 </details>
 </details>
+
+<details>
+<summary><h2>Modifiers</h2></summary>
+<details>
+<summary><h3>Extra Starting Picks</h2></summary>
+Grants extra picks at the start of a game to each player.
+
+#### Options
+---
+
+- Extra Picks: The number of extra picks to grant.
+</details>
+<details>
+<summary><h3>Singleton</h2></summary>
+Prevents players from receiving cards that someone already has.
+
+#### Options
+---
+
+- Enabled: Whether the modifer is enabled or not.
+</details>
+<details>
+<summary><h3>Winners Need Hugs Too</h2></summary>
+When players choose cards, winners also get a card.
+
+#### Options
+---
+
+- Enabled: Whether the modifer is enabled or not.
+</details>
+</details>

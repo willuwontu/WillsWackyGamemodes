@@ -23,6 +23,7 @@ using WWGM.GameModeHandlers;
 using WWGM.GameModeModifiers;
 using WWGM.Patches;
 using RWF.GameModes;
+using SettingsUI;
 
 namespace WWGM
 {
@@ -38,7 +39,7 @@ namespace WWGM
         private const string ModId = "com.willuwontu.rounds.gamemodes";
         private const string ModName = "Will's Wacky GameModes";
         private const string ModConfigName = "WillsWackyGameModes";
-        public const string Version = "0.0.2"; // What version are we on (major.minor.patch)?
+        public const string Version = "0.0.3"; // What version are we on (major.minor.patch)?
 
         public const string ModInitials = "WWWGM";
 
@@ -73,14 +74,16 @@ namespace WWGM
             ModdingUtils.Utils.Cards.instance.AddCardValidationFunction(SingletonModifier.Condition);
 
             Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, false);
+            SettingsUI.RWFSettingsUI.RegisterMenu(ModName, () => { }, NewGUI, true);
 
             GameModeManager.AddHook(GameModeHooks.HookGameStart, GameStart);
+            GameModeManager.AddHook(GameModeHooks.HookPickStart, GameModeModifiers.ExtraStartingPicks.StartingPicks);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, WinnersNeedHugsToo.WinnerPicks);
         }
 
         internal static IEnumerator GameStart(IGameModeHandler gm)
         {
-            GameModeManager.AddOnceHook(GameModeHooks.HookPickStart, GameModeModifiers.ExtraStartingPicks.StartingPicks);
+            ExtraStartingPicks.pickHasRun = false;
 
             yield break;
         }
@@ -91,6 +94,7 @@ namespace WWGM
         {
             if (PhotonNetwork.IsMasterClient)
             {
+                UnityEngine.Debug.Log("Sending Handshake RPC");
                 NetworkingManager.RPC(typeof(WillsWackyGameModes), nameof(SyncSettings), new object[] {
                     ConfigManager.studDraws.Value,
                     ConfigManager.rollingMaxCards.Value,
@@ -207,9 +211,9 @@ namespace WWGM
             }
         }
 
-        #region GUI
+        #region MainMenuGUI
 
-        private static void NewGUI(GameObject menu)
+        internal static void NewGUI(GameObject menu)
         {
             MenuHandler.CreateText(ModName + " Options", menu, out TextMeshProUGUI _, 60);
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
@@ -382,6 +386,6 @@ namespace WWGM
 
         #endregion ModifierGUI
 
-        #endregion GUI
+        #endregion MainMenuGUI
     }
 }

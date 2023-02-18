@@ -31,7 +31,7 @@ namespace WWGM.GameModeModifiers
                 return true;
             }
 
-            if (PlayerManager.instance.players.Any(p => player.data.currentCards.Contains(card)))
+            if (PlayerManager.instance.players.Any(p => p.data.currentCards.Contains(card)))
             {
                 return false;
             }

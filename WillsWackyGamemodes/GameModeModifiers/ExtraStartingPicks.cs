@@ -19,10 +19,15 @@ namespace WWGM.GameModeModifiers
     {
         public static int extraPicks = 0;
         public const int maxExtraPicks = 5;
+        public static bool pickHasRun = false;
 
         internal static IEnumerator StartingPicks(IGameModeHandler gm)
         {
-            for (int i = 0; i < extraPicks;)
+            if (pickHasRun) { yield break; }
+
+            //UnityEngine.Debug.Log("Running extra starting picks.");
+
+            for (int i = 0; i < extraPicks; i++)
             {
                 List<Player> pickOrder = PlayerManager.instance.GetPickOrder(null);
 
@@ -40,6 +45,8 @@ namespace WWGM.GameModeModifiers
                     yield return new WaitForSecondsRealtime(0.1f);
                 }
             }
+
+            pickHasRun = true;
 
             yield break;
         }

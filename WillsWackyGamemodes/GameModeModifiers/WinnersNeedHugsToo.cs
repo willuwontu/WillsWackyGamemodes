@@ -26,6 +26,8 @@ namespace WWGM.GameModeModifiers
                 yield break;
             }
 
+            //UnityEngine.Debug.Log("Running winner picks");
+
             List<Player> winners = PlayerManager.instance.players.Where(p => GameModeManager.CurrentHandler.GetRoundWinners().Contains(p.teamID)).ToList();
 
             foreach (Player player in winners)
