@@ -5,6 +5,12 @@ Provides a few different gamemodes currently. A couple more gamemodes and some g
 <details>
 <summary><h2>Change log</h2></summary>
 
+### v 0.0.3
+- Added in-lobby settings menu.
+
+### v 0.0.2
+- Gamemode Modifiers added.
+
 ### v 0.0.1
 - Adjustments to the default values
 - Pick Phase UI to display the current pick phase in Draft and Stud Draw.
