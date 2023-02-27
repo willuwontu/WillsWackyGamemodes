@@ -27,11 +27,12 @@ using SettingsUI;
 
 namespace WWGM
 {
-    [BepInDependency("com.willis.rounds.unbound", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("pykess.rounds.plugins.moddingutils", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("pykess.rounds.plugins.cardchoicespawnuniquecardpatch", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("pykess.rounds.plugins.pickncards", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("io.olavim.rounds.rwf", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("com.willis.rounds.unbound")]
+    [BepInDependency("pykess.rounds.plugins.moddingutils")]
+    [BepInDependency("pykess.rounds.plugins.cardchoicespawnuniquecardpatch")]
+    [BepInDependency("pykess.rounds.plugins.pickncards")]
+    [BepInDependency("io.olavim.rounds.rwf")]
+    [BepInDependency("com.willuwontu.rounds.rwfsettingsui")]
     [BepInPlugin(ModId, ModName, Version)]
     [BepInProcess("Rounds.exe")]
     public class WillsWackyGameModes : BaseUnityPlugin
@@ -39,7 +40,7 @@ namespace WWGM
         private const string ModId = "com.willuwontu.rounds.gamemodes";
         private const string ModName = "Will's Wacky GameModes";
         private const string ModConfigName = "WillsWackyGameModes";
-        public const string Version = "0.0.3"; // What version are we on (major.minor.patch)?
+        public const string Version = "0.0.4"; // What version are we on (major.minor.patch)?
 
         public const string ModInitials = "WWWGM";
 
@@ -74,7 +75,7 @@ namespace WWGM
             ModdingUtils.Utils.Cards.instance.AddCardValidationFunction(SingletonModifier.Condition);
 
             Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, false);
-            SettingsUI.RWFSettingsUI.RegisterMenu(ModName, () => { }, NewGUI, true);
+            SettingsUI.RWFSettingsUI.RegisterMenu(ModName, NewGUI, true, () => { });
 
             GameModeManager.AddHook(GameModeHooks.HookGameStart, GameStart);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, GameModeModifiers.ExtraStartingPicks.StartingPicks);

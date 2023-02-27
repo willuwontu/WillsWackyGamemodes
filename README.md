@@ -5,6 +5,9 @@ Provides a few different gamemodes currently. A couple more gamemodes and some g
 <details>
 <summary><h2>Change log</h2></summary>
 
+### v 0.0.4
+- Settings menu moved to separate mod.
+
 ### v 0.0.3
 - Added in-lobby settings menu.
 
