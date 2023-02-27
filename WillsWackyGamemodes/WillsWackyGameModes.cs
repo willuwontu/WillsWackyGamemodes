@@ -75,7 +75,7 @@ namespace WWGM
             ModdingUtils.Utils.Cards.instance.AddCardValidationFunction(SingletonModifier.Condition);
 
             Unbound.RegisterMenu(ModName, () => { }, NewGUI, null, false);
-            SettingsUI.RWFSettingsUI.RegisterMenu(ModName, NewGUI, true, () => { });
+            SettingsUI.RWFSettingsUI.RegisterMenu(ModName, NewGUI);
 
             GameModeManager.AddHook(GameModeHooks.HookGameStart, GameStart);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, GameModeModifiers.ExtraStartingPicks.StartingPicks);
