@@ -24,6 +24,7 @@ using WWGM.GameModeModifiers;
 using WWGM.Patches;
 using RWF.GameModes;
 using SettingsUI;
+using BepInEx.Bootstrap;
 
 namespace WWGM
 {
@@ -33,6 +34,7 @@ namespace WWGM
     [BepInDependency("pykess.rounds.plugins.pickncards")]
     [BepInDependency("io.olavim.rounds.rwf")]
     [BepInDependency("com.willuwontu.rounds.rwfsettingsui")]
+    [BepInDependency("root.classes.manager.reborn", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInPlugin(ModId, ModName, Version)]
     [BepInProcess("Rounds.exe")]
     public class WillsWackyGameModes : BaseUnityPlugin
@@ -178,6 +180,8 @@ namespace WWGM
             // Gamemode modifier settings
             public static ConfigEntry<int> extraStartingPicks;
             public static ConfigEntry<bool> singletonEnabled;
+            public static ConfigEntry<bool> singletonSelfEnabled;
+            public static ConfigEntry<bool> singletonClassEnabled;
             public static ConfigEntry<bool> winnerHugsEnabled;
 
             public static void Setup(BaseUnityPlugin mod)
@@ -204,10 +208,14 @@ namespace WWGM
 
                 extraStartingPicks = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "ExtraStartingPicks", 0, "The number of extra pick phases at the start of a game.");
                 singletonEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "SingletonEnabled", false, "Whether the singleton modifier is enabled.");
+                singletonClassEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "SingletonClassEnabled", false, "Whether the singleton modifier affects class cards that you have.");
+                singletonSelfEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "SingletonOthersEnabled", false, "Whether the singleton modifier affects cards that you have.");
                 winnerHugsEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "WinnerHugsEnabled", false, "Whether winners get to pick too.");
 
                 ExtraStartingPicks.extraPicks = extraStartingPicks.Value;
                 SingletonModifier.enabled = singletonEnabled.Value;
+                SingletonModifier.classEnabled = singletonClassEnabled.Value;
+                SingletonModifier.SelfEnabled = singletonSelfEnabled.Value;
                 WinnersNeedHugsToo.enabled = winnerHugsEnabled.Value;
             }
         }
@@ -368,7 +376,41 @@ namespace WWGM
                 ConfigManager.singletonEnabled.Value = val;
                 SingletonModifier.enabled = val;
             }
-            var continueUsesOwnCountObj = MenuHandler.CreateToggle(ConfigManager.singletonEnabled.Value, "Enabled", menu, ChangedSingletonEnabled, 30);
+            var singletonEnabledObj = MenuHandler.CreateToggle(ConfigManager.singletonEnabled.Value, "Enabled", menu, null, 30);
+            var singletonEnabledToggle = singletonEnabledObj.GetComponentInChildren<Toggle>();
+
+            void ChangedSelfEnabled(bool val)
+            {
+                ConfigManager.singletonSelfEnabled.Value = val;
+                SingletonModifier.SelfEnabled = val;
+            }
+            var selfEnabledObj = MenuHandler.CreateToggle(ConfigManager.singletonSelfEnabled.Value, "Allow duplicates of cards you have.", menu, ChangedSelfEnabled, 30);
+            Toggle selfEnabledToggle = selfEnabledObj.GetComponentInChildren<Toggle>();
+            selfEnabledToggle.interactable = ConfigManager.singletonEnabled.Value;
+
+            void ChangedClassEnabled(bool val)
+            {
+                ConfigManager.singletonClassEnabled.Value = val;
+                SingletonModifier.classEnabled = val;
+            }
+            GameObject classEnabledObj = null;
+            Toggle classEnabledToggle = null;
+            if (Chainloader.PluginInfos.Keys.Contains("root.classes.manager.reborn"))
+            {
+                classEnabledObj = MenuHandler.CreateToggle(ConfigManager.singletonClassEnabled.Value, "Allow duplicates of class cards you have.", menu, ChangedClassEnabled, 30);
+                classEnabledToggle = classEnabledObj.GetComponentInChildren<Toggle>();
+                classEnabledToggle.interactable = ConfigManager.singletonEnabled.Value;
+            }
+
+            singletonEnabledToggle.onValueChanged.AddListener((val) =>
+            {
+                ChangedSingletonEnabled(val);
+                selfEnabledToggle.interactable = val;
+                if (classEnabledToggle != null) 
+                { 
+                    classEnabledToggle.interactable = val; 
+                }
+            });
         }
 
         private static void WinnerHugs(GameObject menu)
@@ -382,7 +424,7 @@ namespace WWGM
                 ConfigManager.winnerHugsEnabled.Value = val;
                 WinnersNeedHugsToo.enabled = val;
             }
-            var continueUsesOwnCountObj = MenuHandler.CreateToggle(ConfigManager.winnerHugsEnabled.Value, "Enabled", menu, ChangedWinnerHugsEnabled, 30);
+            var winnerHugsEnabledObj = MenuHandler.CreateToggle(ConfigManager.winnerHugsEnabled.Value, "Enabled", menu, ChangedWinnerHugsEnabled, 30);
         }
 
         #endregion ModifierGUI

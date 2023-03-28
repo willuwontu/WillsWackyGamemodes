@@ -1,4 +1,5 @@
-﻿using Photon.Pun;
+﻿using BepInEx.Bootstrap;
+using Photon.Pun;
 using RWF;
 using RWF.GameModes;
 using System;
@@ -18,6 +19,8 @@ namespace WWGM.GameModeModifiers
     public static class SingletonModifier
     {
         public static bool enabled = false;
+        public static bool SelfEnabled = false;
+        public static bool classEnabled = false;
 
         public static bool Condition(Player player, CardInfo card)
         {
@@ -26,15 +29,34 @@ namespace WWGM.GameModeModifiers
                 return true;
             }
 
-            if (!player || !player.data || !player.data.block || (player.data.currentCards == null))
+            if (!card || !player || !player.data || !player.data.block || (player.data.currentCards == null))
             {
                 return true;
             }
 
-            if (PlayerManager.instance.players.Any(p => p.data.currentCards.Contains(card)))
+            // If we're allowed duplicates of our own card
+            if ((SelfEnabled))
+            {
+                // If anyone else has it, we're not allowed it.
+                if (PlayerManager.instance.players.Where(p => p != player).Any(p => p.data.currentCards.Contains(card)))
+                {
+                    return false;
+                }
+            }
+            // If we're allowed duplicates of class cards
+            else if (Chainloader.PluginInfos.Keys.Contains("root.classes.manager.reborn") && classEnabled && ClassesManagerReborn.ClassesRegistry.GetClassObjects(ClassesManagerReborn.CardType.Card | ClassesManagerReborn.CardType.Entry | ClassesManagerReborn.CardType.SubClass | ClassesManagerReborn.CardType.Branch | ClassesManagerReborn.CardType.Gate).Select(co => co.card).Contains(card))
+            {
+                // If anyone else has it, we're not allowed it.
+                if (PlayerManager.instance.players.Where(p => p != player).Any(p => p.data.currentCards.Contains(card)))
+                {
+                    return false;
+                }
+            }
+            else if ((PlayerManager.instance.players.Any(p => p.data.currentCards.Contains(card))))
             {
                 return false;
             }
+            
 
             return true;
         }
