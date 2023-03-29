@@ -1,7 +1,7 @@
 {
 	"name":"WillsWackyGameModes",
 	"author_name":"willuwontu",
-    "version_number":"0.0.3",
+    "version_number":"0.0.4",
 	"website_url":"https://github.com/willuwontu/WillsWackyGameModes",
 	"displayName":"Will's Wacky Gamemodes",
 	"description":"A few new types of gamemodes for players to enjoy.",
@@ -11,6 +11,7 @@
 		"Pykess-CardChoiceSpawnUniqueCardPatch-0.1.7",
 		"Pykess-ModdingUtils-0.2.6",
 		"Pykess-Pick_N_Cards-0.2.5",
-		"olavim-RoundsWithFriends-2.2.1"
+		"olavim-RoundsWithFriends-2.2.1",
+		"willuwontu-RoundsWithFriendSettingsUI-0.0.1"
 	]
 }
