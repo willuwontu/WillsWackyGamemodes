@@ -28,16 +28,18 @@ namespace WWGM.GameModes
     /// </summary>
     public class GM_Draft : RWFGameMode
     {
+        internal const string ConfigSection = "GameModes.Draft";
+
         internal static GM_Draft instance;
         internal const int minimumCardsInHand = 2;
 
-        internal static int extraCardsDrawn = 5;
-        internal static int startingPicks = 5;
-        internal static int picksPerRound = 1;
-        internal static bool drawBetweenRounds = false;
-        internal static int picksOnContinue = 2;
-        internal static bool drawOnContinue = true;
-        internal static bool continueUsesOwnCount = true;
+        internal static Config<int> extraCardsDrawn;
+        internal static Config<int> startingPicks;
+        internal static Config<int> picksPerRound;
+        internal static Config<bool> drawBetweenRounds;
+        internal static Config<int> picksOnContinue;
+        internal static Config<bool> drawOnContinue;
+        internal static Config<bool> continueUsesOwnCount;
 
         internal static Dictionary<Player, List<CardInfo>> draftingcards = new Dictionary<Player, List<CardInfo>>();
         internal static bool firstpick = false;
@@ -55,6 +57,17 @@ namespace WWGM.GameModes
         List<Player> prevPickOrder = new List<Player>();
 
         internal static CardInfo nullCard => (CardInfo)typeof(CardChoiceSpawnUniqueCardPatch.CardChoiceSpawnUniqueCardPatch).GetField("NullCard", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Default | BindingFlags.GetField).GetValue(null);
+
+        public static void Setup()
+        {
+            GM_Draft.startingPicks = ConfigManager.Bind<int>(ConfigSection, "StartingPicks", 3, "The number of pick phases at the start of draft mode.");
+            GM_Draft.extraCardsDrawn = ConfigManager.Bind<int>(ConfigSection, "ExtraCards", 0, "The amount of cards over the number of picks to spawn in draft mode.");
+            GM_Draft.picksPerRound = ConfigManager.Bind<int>(ConfigSection, "PicksPerRound", 1, "The number of pick phases between each round in draft mode.");
+            GM_Draft.drawBetweenRounds = ConfigManager.Bind<bool>(ConfigSection, "CanDrawEachRound", true, "Whether pick phases occur between rounds in draft mode.");
+            GM_Draft.drawOnContinue = ConfigManager.Bind<bool>(ConfigSection, "CanDrawOnContinue", true, "Whether pick phases occur on continue.");
+            GM_Draft.picksOnContinue = ConfigManager.Bind<int>(ConfigSection, "PicksPerContinue", 1, "The number of pick phases when you continue.");
+            GM_Draft.continueUsesOwnCount = ConfigManager.Bind<bool>(ConfigSection, "ContinueOwnCount", false, "Whether picking during a continue uses its own method to determine the amount of cards drawn.");
+        }
 
         protected override void Awake()
         {
@@ -185,10 +198,10 @@ namespace WWGM.GameModes
                 
                 GM_Draft.firstpick = true;
                 //UnityEngine.Debug.Log($"First pick is {GM_Draft.firstpick}");
-                min = GM_Draft.startingPicks + GM_Draft.extraCardsDrawn + 1;
-                if (continuing && GM_Draft.continueUsesOwnCount)
+                min = GM_Draft.startingPicks.CurrentValue + GM_Draft.extraCardsDrawn.CurrentValue + 1;
+                if (continuing && GM_Draft.continueUsesOwnCount.CurrentValue)
                 {
-                    min = GM_Draft.picksOnContinue + GM_Draft.extraCardsDrawn + 1;
+                    min = GM_Draft.picksOnContinue.CurrentValue + GM_Draft.extraCardsDrawn.CurrentValue + 1;
                 }
             }
             else
@@ -349,10 +362,10 @@ namespace WWGM.GameModes
 
             yield return new WaitForSecondsRealtime(1f);
 
-            for (int i = 0; i < GM_Draft.startingPicks; i++)
+            for (int i = 0; i < GM_Draft.startingPicks.CurrentValue; i++)
             {
                 this.currentPickPhase = i + 1;
-                this.maxPickPhases = GM_Draft.startingPicks;
+                this.maxPickPhases = GM_Draft.startingPicks.CurrentValue;
                 yield return HandlePicks(null);
                 yield return this.WaitForSyncUp();
             }
@@ -393,22 +406,22 @@ namespace WWGM.GameModes
 
             PlayerManager.instance.InvokeMethod("SetPlayersVisible", false);
 
-            if (GM_Draft.drawBetweenRounds)
+            if (GM_Draft.drawBetweenRounds.CurrentValue)
             {
-                for (int i = 0; i < GM_Draft.picksPerRound; i++)
+                for (int i = 0; i < GM_Draft.picksPerRound.CurrentValue; i++)
                 {
                     this.currentPickPhase = i + 1;
-                    this.maxPickPhases = GM_Draft.picksPerRound;
+                    this.maxPickPhases = GM_Draft.picksPerRound.CurrentValue;
                     yield return HandlePicks(winningTeamIDs);
                     yield return this.WaitForSyncUp();
                 }
             }
-            else if (GM_Draft.drawOnContinue && GM_Draft.continuing)
+            else if (GM_Draft.drawOnContinue.CurrentValue && GM_Draft.continuing)
             {
                 GM_Draft.draftingcards.Clear();
                 GM_Draft.draftingcards = new Dictionary<Player, List<CardInfo>>();
 
-                for (int i = 0; i < GM_Draft.picksOnContinue; i++)
+                for (int i = 0; i < GM_Draft.picksOnContinue.CurrentValue; i++)
                 {
                     yield return HandlePicks(null);
                     yield return this.WaitForSyncUp();

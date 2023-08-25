@@ -18,13 +18,22 @@ namespace WWGM.GameModeModifiers
     /// </summary>
     public static class SingletonModifier
     {
-        public static bool enabled = false;
-        public static bool SelfEnabled = false;
-        public static bool classEnabled = false;
+        internal const string ConfigSection = "Modifiers.Singleton";
+
+        public static Config<bool> enabled;
+        public static Config<bool> selfEnabled;
+        public static Config<bool> classEnabled;
+
+        public static void Setup()
+        {
+            enabled = ConfigManager.Bind<bool>(ConfigSection, "Enabled", false, "Whether the modifier is enabled or not.");
+            selfEnabled = ConfigManager.Bind<bool>(ConfigSection, "OthersOnly", false, "Whether the singleton modifier affects cards that you have.");
+            classEnabled = ConfigManager.Bind<bool>(ConfigSection, "IgnoreClasses", false, "Whether the singleton modifier affects class cards.");
+        }
 
         public static bool Condition(Player player, CardInfo card)
         {
-            if (!enabled)
+            if (!enabled.CurrentValue)
             {
                 return true;
             }
@@ -35,7 +44,7 @@ namespace WWGM.GameModeModifiers
             }
 
             // If we're allowed duplicates of our own card
-            if ((SelfEnabled))
+            if ((selfEnabled.CurrentValue))
             {
                 // If anyone else has it, we're not allowed it.
                 if (PlayerManager.instance.players.Where(p => p != player).Any(p => p.data.currentCards.Contains(card)))
@@ -44,7 +53,7 @@ namespace WWGM.GameModeModifiers
                 }
             }
             // If we're allowed duplicates of class cards
-            else if (Chainloader.PluginInfos.Keys.Contains("root.classes.manager.reborn") && classEnabled && ClassesManagerReborn.ClassesRegistry.GetClassObjects(ClassesManagerReborn.CardType.Card | ClassesManagerReborn.CardType.Entry | ClassesManagerReborn.CardType.SubClass | ClassesManagerReborn.CardType.Branch | ClassesManagerReborn.CardType.Gate).Select(co => co.card).Contains(card))
+            else if (Chainloader.PluginInfos.Keys.Contains("root.classes.manager.reborn") && classEnabled.CurrentValue && ClassesManagerHelper.IsClassCard(card))
             {
                 // If anyone else has it, we're not allowed it.
                 if (PlayerManager.instance.players.Where(p => p != player).Any(p => p.data.currentCards.Contains(card)))

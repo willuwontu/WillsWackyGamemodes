@@ -22,9 +22,16 @@ namespace WWGM.GameModes
     {
         internal static GM_RollingCardBar instance;
 
-        internal static int maxAllowedCards = 5;
+        internal static Config<int> maxAllowedCards;
 
         internal PickOrderStrategy currentStrategy;
+
+        internal const string ConfigSection = "GameModes.RollingCardBar";
+
+        public static void Setup()
+        {
+            maxAllowedCards = ConfigManager.Bind<int>(ConfigSection, "MaxCards", 5, "Maximum amount of cards a player can have in Rolling Cardbar matches.");
+        }
 
         protected override void Awake()
         {
@@ -43,9 +50,9 @@ namespace WWGM.GameModes
 
             foreach (Player player in PlayerManager.instance.players)
             {
-                if (player.data.currentCards.Count() > GM_RollingCardBar.maxAllowedCards)
+                if (player.data.currentCards.Count() > GM_RollingCardBar.maxAllowedCards.CurrentValue)
                 {
-                    ModdingUtils.Utils.Cards.instance.RemoveCardsFromPlayer(player, Enumerable.Range(0, player.data.currentCards.Count() - GM_RollingCardBar.maxAllowedCards).ToArray());
+                    ModdingUtils.Utils.Cards.instance.RemoveCardsFromPlayer(player, Enumerable.Range(0, player.data.currentCards.Count() - GM_RollingCardBar.maxAllowedCards.CurrentValue).ToArray());
                 }
             }
 
@@ -89,9 +96,9 @@ namespace WWGM.GameModes
 
             foreach (Player player in PlayerManager.instance.players)
             {
-                if (player.data.currentCards.Count() > GM_RollingCardBar.maxAllowedCards)
+                if (player.data.currentCards.Count() > GM_RollingCardBar.maxAllowedCards.CurrentValue)
                 {
-                    ModdingUtils.Utils.Cards.instance.RemoveCardsFromPlayer(player, Enumerable.Range(0, player.data.currentCards.Count() - GM_RollingCardBar.maxAllowedCards).ToArray());
+                    ModdingUtils.Utils.Cards.instance.RemoveCardsFromPlayer(player, Enumerable.Range(0, player.data.currentCards.Count() - GM_RollingCardBar.maxAllowedCards.CurrentValue).ToArray());
                 }
             }
 

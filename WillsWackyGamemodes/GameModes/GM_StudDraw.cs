@@ -22,9 +22,16 @@ namespace WWGM.GameModes
     {
         internal static GM_StudDraw instance;
 
-        internal static int numOfPicks = 5;
+        internal static Config<int> numOfPicks;
 
         internal PickOrderStrategy currentStrategy;
+
+        internal const string ConfigSection = "GameModes.StudDraw";
+
+        public static void Setup()
+        {
+            numOfPicks = ConfigManager.Bind<int>(ConfigSection, "StudDraws", 5, "Total number of pick phases before fighting starts.");
+        }
 
         protected override void Awake()
         {
@@ -69,7 +76,7 @@ namespace WWGM.GameModes
 
             List<Player> pickOrder;
 
-            for (int i = 0; i < GM_StudDraw.numOfPicks; i++) 
+            for (int i = 0; i < GM_StudDraw.numOfPicks.CurrentValue; i++) 
             {
                 pickOrder = this.currentStrategy.GetPickOrder(new int[] { });
 

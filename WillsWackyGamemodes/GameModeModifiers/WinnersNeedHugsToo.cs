@@ -13,15 +13,22 @@ using UnityEngine;
 namespace WWGM.GameModeModifiers
 {
     /// <summary>
-    /// A simple gamemode modifier that gives a .
+    /// A simple gamemode modifier that gives the winner a pick each round.
     /// </summary>
     public static class WinnersNeedHugsToo
     {
-        public static bool enabled;
+        internal const string ConfigSection = "Modifiers.WinnerPick";
+
+        public static Config<bool> enabled;
+
+        public static void Setup()
+        {
+            enabled = ConfigManager.Bind<bool>(ConfigSection, "Enabled", false, "Whether winners get to pick too.");
+        }
 
         internal static IEnumerator WinnerPicks(IGameModeHandler gm)
         {
-            if (!enabled)
+            if (!enabled.CurrentValue)
             {
                 yield break;
             }

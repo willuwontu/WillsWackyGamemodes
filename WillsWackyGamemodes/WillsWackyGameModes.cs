@@ -25,6 +25,7 @@ using WWGM.Patches;
 using RWF.GameModes;
 using SettingsUI;
 using BepInEx.Bootstrap;
+using static System.Collections.Specialized.BitVector32;
 
 namespace WWGM
 {
@@ -39,10 +40,10 @@ namespace WWGM
     [BepInProcess("Rounds.exe")]
     public class WillsWackyGameModes : BaseUnityPlugin
     {
-        private const string ModId = "com.willuwontu.rounds.gamemodes";
+        internal const string ModId = "com.willuwontu.rounds.gamemodes";
         private const string ModName = "Will's Wacky GameModes";
         private const string ModConfigName = "WillsWackyGameModes";
-        public const string Version = "0.0.4"; // What version are we on (major.minor.patch)?
+        public const string Version = "0.0.5"; // What version are we on (major.minor.patch)?
 
         public const string ModInitials = "WWWGM";
 
@@ -63,9 +64,7 @@ namespace WWGM
         {
             Unbound.RegisterCredits(ModName, new string[] { "willuwontu" }, new string[] { "github", "Ko-Fi" }, new string[] { "https://github.com/willuwontu/wills-wacky-cards", "https://ko-fi.com/willuwontu" });
 
-            Unbound.RegisterHandshake(WillsWackyGameModes.ModId, this.OnHandShakeCompleted);
-
-            ConfigManager.Setup(this);
+            ConfigManager.Setup();
 
             GameModeManager.AddHandler<GM_StudDraw>(StudDraw.GameModeID, new StudDraw());
             GameModeManager.AddHandler<GM_StudDraw>(TeamStudDraw.GameModeID, new TeamStudDraw());
@@ -82,6 +81,9 @@ namespace WWGM
             GameModeManager.AddHook(GameModeHooks.HookGameStart, GameStart);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, GameModeModifiers.ExtraStartingPicks.StartingPicks);
             GameModeManager.AddHook(GameModeHooks.HookPickStart, WinnersNeedHugsToo.WinnerPicks);
+            GameModeManager.AddHook(GameModeHooks.HookRoundStart, RespawnsPerRound.OnRoundStart);
+            GameModeManager.AddHook(GameModeHooks.HookGameStart, RespawnsPerRound.OnRoundStart);
+            GameModeManager.AddHook(GameModeHooks.HookRoundEnd, RespawnsPerRound.OnRoundStart);
         }
 
         internal static IEnumerator GameStart(IGameModeHandler gm)
@@ -90,51 +92,6 @@ namespace WWGM
 
             yield break;
         }
-
-        #region Handshake
-
-        private void OnHandShakeCompleted()
-        {
-            if (PhotonNetwork.IsMasterClient)
-            {
-                UnityEngine.Debug.Log("Sending Handshake RPC");
-                NetworkingManager.RPC(typeof(WillsWackyGameModes), nameof(SyncSettings), new object[] {
-                    ConfigManager.studDraws.Value,
-                    ConfigManager.rollingMaxCards.Value,
-                    ConfigManager.draftExtraCards.Value,
-                    ConfigManager.draftStartingPicks.Value,
-                    ConfigManager.draftPicksPerRound.Value,
-                    ConfigManager.draftCanDrawBetweenRounds.Value,
-                    ConfigManager.draftPicksPerContinue.Value,
-                    ConfigManager.draftDrawOnContinue.Value,
-                    ConfigManager.draftContinueOwnCount.Value,
-
-                    ConfigManager.extraStartingPicks.Value,
-                    ConfigManager.singletonEnabled.Value,
-                    ConfigManager.winnerHugsEnabled.Value
-                });
-            }
-        }
-
-        [UnboundRPC]
-        private static void SyncSettings(int studDraws, int rollingMax, int draftExtra, int draftStarting, int draftRoundPicks, bool draftRoundPick, int draftContinuePicks, bool draftContinuePick, bool continueOwnCount, int extraStarting, bool singletonEnabled, bool winnerHugs)
-        {
-            GM_StudDraw.numOfPicks = studDraws;
-            GM_RollingCardBar.maxAllowedCards = rollingMax;
-            GM_Draft.startingPicks = draftStarting;
-            GM_Draft.extraCardsDrawn = draftExtra;
-            GM_Draft.picksPerRound = draftRoundPicks;
-            GM_Draft.drawBetweenRounds = draftRoundPick;
-            GM_Draft.drawOnContinue = draftContinuePick;
-            GM_Draft.picksOnContinue = draftContinuePicks;
-            GM_Draft.continueUsesOwnCount = continueOwnCount;
-
-            ExtraStartingPicks.extraPicks = extraStarting;
-            SingletonModifier.enabled = singletonEnabled;
-            WinnersNeedHugsToo.enabled = winnerHugs;
-        }
-
-        #endregion Handshake
 
         #region IenumeratorSync
 
@@ -163,62 +120,6 @@ namespace WWGM
         }
 
         #endregion IenumeratorSync
-
-        private static class ConfigManager
-        {
-            // Gamemode settings
-            public static ConfigEntry<int> studDraws;
-            public static ConfigEntry<int> rollingMaxCards;
-            public static ConfigEntry<int> draftExtraCards;
-            public static ConfigEntry<int> draftStartingPicks;
-            public static ConfigEntry<int> draftPicksPerRound;
-            public static ConfigEntry<bool> draftCanDrawBetweenRounds;
-            public static ConfigEntry<int> draftPicksPerContinue;
-            public static ConfigEntry<bool> draftDrawOnContinue;
-            public static ConfigEntry<bool> draftContinueOwnCount;
-
-            // Gamemode modifier settings
-            public static ConfigEntry<int> extraStartingPicks;
-            public static ConfigEntry<bool> singletonEnabled;
-            public static ConfigEntry<bool> singletonSelfEnabled;
-            public static ConfigEntry<bool> singletonClassEnabled;
-            public static ConfigEntry<bool> winnerHugsEnabled;
-
-            public static void Setup(BaseUnityPlugin mod)
-            {
-                studDraws = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "StudDraws", 5, "Total number of pick phases before fighting starts.");
-                rollingMaxCards = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "RollingMax", 5, "Maximum amount of cards a player can have in Rolling Cardbar matches.");
-                draftExtraCards = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftExtraCards", 0, "The amount of cards over the number of picks to spawn in draft mode.");
-                draftStartingPicks = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftStartingPicks", 3, "The number of pick phases at the start of draft mode.");
-                draftPicksPerRound = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftPicksPerRound", 1, "The number of pick phases between each round in draft mode.");
-                draftCanDrawBetweenRounds = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftCanDrawEachRound", true, "Whether pick phases occur between rounds in draft mode.");
-                draftPicksPerContinue = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftPicksPerContinue", 1, "The number of pick phases when you continue.");
-                draftDrawOnContinue = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftCanDrawOnContinue", true, "Whether pick phases occur on continue.");
-                draftContinueOwnCount = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "DraftContinueOwnCount", false, "Whether picking during a continue uses its own method to determine the amount of cards drawn.");
-
-                GM_StudDraw.numOfPicks = studDraws.Value;
-                GM_RollingCardBar.maxAllowedCards = rollingMaxCards.Value;
-                GM_Draft.startingPicks = draftStartingPicks.Value;
-                GM_Draft.extraCardsDrawn = draftExtraCards.Value;
-                GM_Draft.picksPerRound = draftPicksPerRound.Value;
-                GM_Draft.drawBetweenRounds = draftCanDrawBetweenRounds.Value;
-                GM_Draft.drawOnContinue = draftDrawOnContinue.Value;
-                GM_Draft.picksOnContinue = draftPicksPerContinue.Value;
-                GM_Draft.continueUsesOwnCount = draftContinueOwnCount.Value;
-
-                extraStartingPicks = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "ExtraStartingPicks", 0, "The number of extra pick phases at the start of a game.");
-                singletonEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "SingletonEnabled", false, "Whether the singleton modifier is enabled.");
-                singletonClassEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "SingletonClassEnabled", false, "Whether the singleton modifier affects class cards that you have.");
-                singletonSelfEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "SingletonOthersEnabled", false, "Whether the singleton modifier affects cards that you have.");
-                winnerHugsEnabled = mod.Config.Bind(WillsWackyGameModes.ModConfigName, "WinnerHugsEnabled", false, "Whether winners get to pick too.");
-
-                ExtraStartingPicks.extraPicks = extraStartingPicks.Value;
-                SingletonModifier.enabled = singletonEnabled.Value;
-                SingletonModifier.classEnabled = singletonClassEnabled.Value;
-                SingletonModifier.SelfEnabled = singletonSelfEnabled.Value;
-                WinnersNeedHugsToo.enabled = winnerHugsEnabled.Value;
-            }
-        }
 
         #region MainMenuGUI
 
@@ -252,10 +153,9 @@ namespace WWGM
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void CardsDrawn(float val)
             {
-                ConfigManager.studDraws.Value = (int)val;
-                GM_StudDraw.numOfPicks = (int)val;
+                GM_StudDraw.numOfPicks.ConfigValue = (int)val;
             }
-            MenuHandler.CreateSlider("Cards Drawn", menu, 30, 0f, 50f, ConfigManager.studDraws.Value, CardsDrawn, out Slider slider1, true);
+            MenuHandler.CreateSlider("Cards Drawn", menu, 30, 0f, 50f, GM_StudDraw.numOfPicks.ConfigValue, CardsDrawn, out Slider slider1, true);
         }
 
         private static void RollingCardBarMenu(GameObject menu)
@@ -264,10 +164,9 @@ namespace WWGM
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void MaxCardsAllowed(float val)
             {
-                ConfigManager.rollingMaxCards.Value = (int)val;
-                GM_RollingCardBar.maxAllowedCards= (int)val;
+                GM_RollingCardBar.maxAllowedCards.ConfigValue = (int)val;
             }
-            MenuHandler.CreateSlider("Maximum Cards", menu, 30, 1f, 10f, ConfigManager.rollingMaxCards.Value, MaxCardsAllowed, out Slider slider1, true);
+            MenuHandler.CreateSlider("Maximum Cards", menu, 30, 1f, 10f, GM_RollingCardBar.maxAllowedCards.ConfigValue, MaxCardsAllowed, out Slider slider1, true);
         }
 
         private static void DraftMenu(GameObject menu)
@@ -276,47 +175,41 @@ namespace WWGM
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void InitialPicksChanged(float val)
             {
-                ConfigManager.draftStartingPicks.Value = (int)val;
-                GM_Draft.startingPicks= (int)val;
+                GM_Draft.startingPicks.ConfigValue = (int)val;
             }
-            MenuHandler.CreateSlider("Starting Picks", menu, 30, 0f, 10f, ConfigManager.draftStartingPicks.Value, InitialPicksChanged, out Slider slider2, true);
+            MenuHandler.CreateSlider("Starting Picks", menu, 30, 0f, 10f, GM_Draft.startingPicks.ConfigValue, InitialPicksChanged, out Slider slider2, true);
             void ExtraCardsDrawnChanged(float val)
             {
-                ConfigManager.draftExtraCards.Value = (int)val;
-                GM_Draft.extraCardsDrawn = (int)val;
+                GM_Draft.extraCardsDrawn.ConfigValue = (int)val;
             }
-            MenuHandler.CreateSlider("Extra Cards Drawn", menu, 30, 0f, 10f, ConfigManager.draftExtraCards.Value, ExtraCardsDrawnChanged, out Slider slider1, true);
-            var canPickRoundObj = MenuHandler.CreateToggle(ConfigManager.draftCanDrawBetweenRounds.Value, "Can Pick Cards Each Round", menu, null, 30);
+            MenuHandler.CreateSlider("Extra Cards Drawn", menu, 30, 0f, 10f, GM_Draft.extraCardsDrawn.ConfigValue, ExtraCardsDrawnChanged, out Slider slider1, true);
+            var canPickRoundObj = MenuHandler.CreateToggle(GM_Draft.drawBetweenRounds.ConfigValue, "Can Pick Cards Each Round", menu, null, 30);
             var canPickRoundToggle = canPickRoundObj.GetComponent<Toggle>();
             void PicksPerRoundChanged(float val)
             {
-                ConfigManager.draftPicksPerRound.Value = (int)val;
-                GM_Draft.picksPerRound = (int)val;
+                GM_Draft.picksPerRound.ConfigValue = (int)val;
             }
-            var roundPicksObj = MenuHandler.CreateSlider("Picks Per Round", menu, 30, 0f, 5f, ConfigManager.draftPicksPerRound.Value, PicksPerRoundChanged, out Slider slider3, true);
-            var canPickContinueObj = MenuHandler.CreateToggle(ConfigManager.draftDrawOnContinue.Value, "Can Pick Cards On Continue", menu, null, 30);
+            var roundPicksObj = MenuHandler.CreateSlider("Picks Per Round", menu, 30, 0f, 5f, GM_Draft.picksPerRound.ConfigValue, PicksPerRoundChanged, out Slider slider3, true);
+            var canPickContinueObj = MenuHandler.CreateToggle(GM_Draft.drawOnContinue.ConfigValue, "Can Pick Cards On Continue", menu, null, 30);
             var canPickContinueToggle = canPickContinueObj.GetComponent<Toggle>();
             void PicksPerContinueChanged(float val)
             {
-                ConfigManager.draftPicksPerContinue.Value = (int)val;
-                GM_Draft.picksOnContinue = (int)val;
+                GM_Draft.picksOnContinue.ConfigValue = (int)val;
             }
-            var continuePicksObj = MenuHandler.CreateSlider("Picks Per Continue", menu, 30, 0f, 5f, ConfigManager.draftPicksPerContinue.Value, PicksPerContinueChanged, out Slider slider4, true);
+            var continuePicksObj = MenuHandler.CreateSlider("Picks Per Continue", menu, 30, 0f, 5f, GM_Draft.picksOnContinue.ConfigValue, PicksPerContinueChanged, out Slider slider4, true);
             void ContinueOwnCountChanged(bool val)
             {
-                ConfigManager.draftContinueOwnCount.Value = val;
-                GM_Draft.continueUsesOwnCount = val;
+                GM_Draft.continueUsesOwnCount.ConfigValue = val;
             }
-            var continueUsesOwnCountObj = MenuHandler.CreateToggle(ConfigManager.draftContinueOwnCount.Value, "Recalculate Continue Hand Size", menu, ContinueOwnCountChanged, 30);
+            var continueUsesOwnCountObj = MenuHandler.CreateToggle(GM_Draft.continueUsesOwnCount.ConfigValue, "Recalculate Continue Hand Size", menu, ContinueOwnCountChanged, 30);
 
-            roundPicksObj.SetActive(ConfigManager.draftCanDrawBetweenRounds.Value);
-            canPickContinueObj.SetActive(!ConfigManager.draftCanDrawBetweenRounds.Value);
-            continuePicksObj.SetActive(ConfigManager.draftDrawOnContinue.Value && !ConfigManager.draftCanDrawBetweenRounds.Value);
-            continueUsesOwnCountObj.SetActive(ConfigManager.draftDrawOnContinue.Value && !ConfigManager.draftCanDrawBetweenRounds.Value);
+            roundPicksObj.SetActive(GM_Draft.drawBetweenRounds.ConfigValue);
+            canPickContinueObj.SetActive(!GM_Draft.drawBetweenRounds.ConfigValue);
+            continuePicksObj.SetActive(GM_Draft.drawOnContinue.ConfigValue && !GM_Draft.drawBetweenRounds.ConfigValue);
+            continueUsesOwnCountObj.SetActive(GM_Draft.drawOnContinue.ConfigValue && !GM_Draft.drawBetweenRounds.ConfigValue);
             canPickRoundToggle.onValueChanged.AddListener((val) =>
             {
-                ConfigManager.draftCanDrawBetweenRounds.Value = val;
-                GM_Draft.drawBetweenRounds = val;
+                GM_Draft.drawBetweenRounds.ConfigValue = val;
 
                 roundPicksObj.SetActive(val);
                 canPickContinueObj.SetActive(!val);
@@ -324,14 +217,13 @@ namespace WWGM
                 continueUsesOwnCountObj.SetActive(!val);
                 if (!val)
                 {
-                    continuePicksObj.SetActive(ConfigManager.draftDrawOnContinue.Value);
-                    continueUsesOwnCountObj.SetActive(ConfigManager.draftDrawOnContinue.Value);
+                    continuePicksObj.SetActive(GM_Draft.drawOnContinue.ConfigValue);
+                    continueUsesOwnCountObj.SetActive(GM_Draft.drawOnContinue.ConfigValue);
                 }
             });
             canPickContinueToggle.onValueChanged.AddListener((val) =>
             {
-                ConfigManager.draftDrawOnContinue.Value = val;
-                GM_Draft.drawOnContinue = val;
+                GM_Draft.drawOnContinue.ConfigValue = val;
                 continuePicksObj.SetActive(val);
                 continueUsesOwnCountObj.SetActive(val);
             });
@@ -344,6 +236,8 @@ namespace WWGM
         private static void ModifiersMenu(GameObject menu)
         {
             MenuHandler.CreateText("Modifiers", menu, out TextMeshProUGUI _, 60);
+            MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
+            MenuHandler.CreateText("The modifiers below can be used with any gamemode, not just those present in Will's Wacky Gamemodes.", menu, out TextMeshProUGUI _, 30);
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             GameObject startingPicksMenu = MenuHandler.CreateMenu("Starting Picks", () => { }, menu, 60, true, true, menu.transform.parent.gameObject);
             StartingPicksMenu(startingPicksMenu);
@@ -359,10 +253,9 @@ namespace WWGM
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void ChangedStartingPicks(float val)
             {
-                ConfigManager.extraStartingPicks.Value = (int)val;
-                ExtraStartingPicks.extraPicks = (int)val;
+                ExtraStartingPicks.extraPicks.ConfigValue = (int)val;
             }
-            MenuHandler.CreateSlider("Extra Picks", menu, 30, 0f, ExtraStartingPicks.maxExtraPicks, ConfigManager.extraStartingPicks.Value, ChangedStartingPicks, out Slider slider1, true);
+            MenuHandler.CreateSlider("Extra Picks", menu, 30, 0f, ExtraStartingPicks.maxExtraPicks, ExtraStartingPicks.extraPicks.ConfigValue, ChangedStartingPicks, out Slider slider1, true);
         }
 
         private static void SingletonMode(GameObject menu)
@@ -373,33 +266,30 @@ namespace WWGM
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void ChangedSingletonEnabled(bool val)
             {
-                ConfigManager.singletonEnabled.Value = val;
-                SingletonModifier.enabled = val;
+                SingletonModifier.enabled.ConfigValue = val;
             }
-            var singletonEnabledObj = MenuHandler.CreateToggle(ConfigManager.singletonEnabled.Value, "Enabled", menu, null, 30);
+            var singletonEnabledObj = MenuHandler.CreateToggle(SingletonModifier.enabled.ConfigValue, "Enabled", menu, null, 30);
             var singletonEnabledToggle = singletonEnabledObj.GetComponentInChildren<Toggle>();
 
             void ChangedSelfEnabled(bool val)
             {
-                ConfigManager.singletonSelfEnabled.Value = val;
-                SingletonModifier.SelfEnabled = val;
+                SingletonModifier.selfEnabled.ConfigValue = val;
             }
-            var selfEnabledObj = MenuHandler.CreateToggle(ConfigManager.singletonSelfEnabled.Value, "Allow duplicates of cards you have.", menu, ChangedSelfEnabled, 30);
+            var selfEnabledObj = MenuHandler.CreateToggle(SingletonModifier.selfEnabled.ConfigValue, "Allow duplicates of cards you have.", menu, ChangedSelfEnabled, 30);
             Toggle selfEnabledToggle = selfEnabledObj.GetComponentInChildren<Toggle>();
-            selfEnabledToggle.interactable = ConfigManager.singletonEnabled.Value;
+            selfEnabledToggle.interactable = SingletonModifier.selfEnabled.ConfigValue;
 
             void ChangedClassEnabled(bool val)
             {
-                ConfigManager.singletonClassEnabled.Value = val;
-                SingletonModifier.classEnabled = val;
+                SingletonModifier.classEnabled.ConfigValue = val;
             }
             GameObject classEnabledObj = null;
             Toggle classEnabledToggle = null;
             if (Chainloader.PluginInfos.Keys.Contains("root.classes.manager.reborn"))
             {
-                classEnabledObj = MenuHandler.CreateToggle(ConfigManager.singletonClassEnabled.Value, "Allow duplicates of class cards you have.", menu, ChangedClassEnabled, 30);
+                classEnabledObj = MenuHandler.CreateToggle(SingletonModifier.classEnabled.ConfigValue, "Allow duplicates of class cards you have.", menu, ChangedClassEnabled, 30);
                 classEnabledToggle = classEnabledObj.GetComponentInChildren<Toggle>();
-                classEnabledToggle.interactable = ConfigManager.singletonEnabled.Value;
+                classEnabledToggle.interactable = SingletonModifier.enabled.ConfigValue;
             }
 
             singletonEnabledToggle.onValueChanged.AddListener((val) =>
@@ -421,10 +311,9 @@ namespace WWGM
             MenuHandler.CreateText(" ", menu, out TextMeshProUGUI _, 30);
             void ChangedWinnerHugsEnabled(bool val)
             {
-                ConfigManager.winnerHugsEnabled.Value = val;
-                WinnersNeedHugsToo.enabled = val;
+                WinnersNeedHugsToo.enabled.ConfigValue = val;
             }
-            var winnerHugsEnabledObj = MenuHandler.CreateToggle(ConfigManager.winnerHugsEnabled.Value, "Enabled", menu, ChangedWinnerHugsEnabled, 30);
+            var winnerHugsEnabledObj = MenuHandler.CreateToggle(WinnersNeedHugsToo.enabled.ConfigValue, "Enabled", menu, ChangedWinnerHugsEnabled, 30);
         }
 
         #endregion ModifierGUI

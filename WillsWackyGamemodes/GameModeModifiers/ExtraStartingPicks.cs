@@ -17,9 +17,16 @@ namespace WWGM.GameModeModifiers
     /// </summary>
     public static class ExtraStartingPicks
     {
-        public static int extraPicks = 0;
+        internal const string ConfigSection = "Modifiers.StartingPicks";
+
+        public static Config<int> extraPicks;
         public const int maxExtraPicks = 5;
         public static bool pickHasRun = false;
+
+        public static void Setup()
+        {
+            extraPicks = ConfigManager.Bind<int>(ConfigSection, "ExtraPicks", 0, "The number of extra pick phases at the start of a game.");
+        }
 
         internal static IEnumerator StartingPicks(IGameModeHandler gm)
         {
@@ -27,7 +34,7 @@ namespace WWGM.GameModeModifiers
 
             //UnityEngine.Debug.Log("Running extra starting picks.");
 
-            for (int i = 0; i < extraPicks; i++)
+            for (int i = 0; i < extraPicks.CurrentValue; i++)
             {
                 List<Player> pickOrder = PlayerManager.instance.GetPickOrder(null);
 
