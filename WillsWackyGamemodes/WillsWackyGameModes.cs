@@ -43,9 +43,9 @@ namespace WWGM
         internal const string ModId = "com.willuwontu.rounds.gamemodes";
         private const string ModName = "Will's Wacky GameModes";
         private const string ModConfigName = "WillsWackyGameModes";
-        public const string Version = "0.0.5"; // What version are we on (major.minor.patch)?
+        public const string Version = "0.0.6"; // What version are we on (major.minor.patch)?
 
-        public const string ModInitials = "WWWGM";
+        public const string ModInitials = "WWGM";
 
         public static WillsWackyGameModes instance { get; private set; }
 

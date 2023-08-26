@@ -5,6 +5,12 @@ Provides a few different gamemodes currently. A couple more gamemodes and some g
 <details>
 <summary><h2>Change log</h2></summary>
 
+### v 0.0.6
+- Fixed an issue with setting synchronization
+
+### v 0.0.5
+- Changed how settings are synced.
+
 ### v 0.0.4
 - Settings menu moved to separate mod.
 

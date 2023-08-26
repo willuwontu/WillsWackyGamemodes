@@ -186,7 +186,7 @@ namespace WWGM
             get => currentValue;
             set
             {
-                ClampValue(value);
+                currentValue = ClampValue(value);
             }
         }
 
