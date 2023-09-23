@@ -18,10 +18,12 @@ namespace WWGM
 
         public static ReadOnlyDictionary<string, object> ConfigValues => new ReadOnlyDictionary<string, object>(configs.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.BoxedCurrentValue));
 
-        public static ConfigFile ConfigFile => WillsWackyGameModes.instance.Config;
+        public static ConfigFile ConfigFile { get; private set; }
 
-        public static void Setup()
+        public static void Setup(ConfigFile configFile)
         {
+            ConfigFile = configFile;
+
             Unbound.RegisterHandshake(WillsWackyGameModes.ModId, OnHandshakeCompleted);
 
             GM_StudDraw.Setup();

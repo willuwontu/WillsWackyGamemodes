@@ -64,7 +64,7 @@ namespace WWGM
         {
             Unbound.RegisterCredits(ModName, new string[] { "willuwontu" }, new string[] { "github", "Ko-Fi" }, new string[] { "https://github.com/willuwontu/wills-wacky-cards", "https://ko-fi.com/willuwontu" });
 
-            ConfigManager.Setup();
+            ConfigManager.Setup(this.Config);
 
             GameModeManager.AddHandler<GM_StudDraw>(StudDraw.GameModeID, new StudDraw());
             GameModeManager.AddHandler<GM_StudDraw>(TeamStudDraw.GameModeID, new TeamStudDraw());
